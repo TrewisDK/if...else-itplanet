@@ -1,53 +1,11 @@
 from typing import Union
+from datetime import datetime
 
 from fastapi import FastAPI, Body, Response, Request, Path
-
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, ARRAY, BigInteger, Float, DateTime, ForeignKey
-from sqlalchemy.orm import sessionmaker, Session
-
-# Подключаемся к базе данных
-SQLALCHEMY_DATABASE_URL = "postgresql://postgres:root@127.0.0.1/itplanet"
-
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL
-)
-
-Base = declarative_base()
-
-
-# Модель пользователя
-
-
-class User(Base):
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True, index=True)
-    first_name = Column(String)
-    last_name = Column(String)
-    email = Column(String, unique=True, index=True)
-    hashed_password = Column(String)
-
-
-class Animal(Base):
-    __tablename__ = "animals"
-
-    id = Column(BigInteger, primary_key=True)
-    animalTypes = Column(ARRAY(BigInteger))
-    weight = Column(Float)
-    lenght = Column(Float)
-    height = Column(Float)
-    gender = Column(String)
-    lifeStatus = Column(String)
-    chippingDateTime = Column(DateTime)
-    chipperId = Column(Integer, ForeignKey(User.id))
-    chippingLocationId = Column(BigInteger)
-    visitedLocations = Column(ARRAY(BigInteger))
-    deathDateTime = Column(DateTime)
-
-
-Base.metadata.create_all(bind=engine)
+from models import User, AnimalType, Animal, LocationPoint, AnimalVisited
+from sqlalchemy import and_
+from sqlalchemy.orm import sessionmaker
+from models import engine
 
 SessionLocal = sessionmaker(autoflush=False, bind=engine)
 db = SessionLocal()
@@ -59,7 +17,6 @@ app = FastAPI()
 def search_accounts(request: Request, response: Response):
     """get user account by id"""
     query_params = request.query_params
-    search_data = db.query(User).all()
     accounts_searched = []
 
     try:
@@ -87,36 +44,23 @@ def search_accounts(request: Request, response: Response):
         response.status_code = 400
         return {"message": "bad request"}
 
-    if first_name is None:
-        pass
-    else:
-        for user in search_data:
-            if first_name.lower() in user.first_name.lower():
-                accounts_searched.append(user)
-    if last_name is None:
-        pass
-    else:
-        for user in search_data:
-            if last_name.lower() in user.last_name.lower():
-                accounts_searched.append(user)
-    if email is None:
-        pass
-    else:
-        for user in search_data:
-            if email.lower() in user.email.lower():
-                accounts_searched.append(user)
+    query = db.query(User)
+    filters = []
+    if first_name is not None:
+        filters.append(User.first_name.ilike(f"%{first_name}%"))
+    if last_name is not None:
+        filters.append(User.last_name.ilike(f"%{last_name}%"))
+    if email is not None:
+        filters.append(User.email.ilike(f"%{email}%"))
+    result = query.filter(and_(*filters)).limit(size).offset(from_).all()
 
-    accounts_searched = list(set(accounts_searched))
-    accounts_searched.sort(key=lambda dictionary: dictionary.id)
-    cleaned_data = []
+    for user in result:
+        accounts_searched.append({"id": user.id,
+                                  "firstName": user.first_name,
+                                  "lastName": user.last_name,
+                                  "email": user.email})
 
-    for user in accounts_searched:
-        cleaned_data.append({"id": user.id,
-                             "firstName": user.first_name,
-                             "lastName": user.last_name,
-                             "email": user.email})
-
-    return cleaned_data
+    return accounts_searched
 
 
 @app.get("/accounts/{id}", status_code=200)
@@ -182,7 +126,34 @@ def search_animals(request: Request, response: Response):
     if startDateTime is None:
         pass
     else:
+        try:
+            datetime.fromisoformat(startDateTime)
+        except ValueError:
+            response.status_code = 400
+            return {"message": "startDateTime must be in ISO 8601 format"}
+        for animal in search_data:
+            if datetime.fromisoformat(startDateTime) >= animal.chippingDateTime:
+                animals.append(animal)
+
+    if endDateTime is None:
         pass
+    else:
+        try:
+            datetime.fromisoformat(startDateTime)
+        except ValueError:
+            response.status_code = 400
+            return {"message": "startDateTime must be in ISO 8601 format"}
+        for animal in search_data:
+            if datetime.fromisoformat(startDateTime) <= animal.chippingDateTime:
+                animals.append(animal)
+
+    if chipperId is None:
+        pass
+    else:
+        for animal in search_data:
+            if animal.chipperId == int(chipperId):
+                animals.append(animal)
+    return {"data": animals}
 
 
 @app.get("/animals/{animalId}", status_code=200)
@@ -191,13 +162,16 @@ def get_animal(response: Response, animalId: int = Path()):
     if animalId is None or animalId <= 0:
         response.status_code = 400
         return {"message": "animalId cannot be less than 1"}
-    animal = db.get(Animal, animalId)
-    if animal is None:
-        response.status_code = 404
-        return {"message": "animal not found"}
-    return {"id": animal.id,
-            "animalTypes": animal.animalTypes,
-            "weight": animal.weight, "length": animal.lenght, "height": animal.height,
-            "gender": animal.gender, "lifeStatus": animal.lifeStatus, "chippingDateTime": animal.chippingDateTime,
-            "chipperId": animal.chipperId, "chippingLocationId": animal.chippingLocationId,
-            "visitedLocations": animal.visitedLocations, "deathDateTime": animal.deathDateTime}
+    #animal = db.get(Animal, animalId)
+    animal = db.query(Animal,  AnimalVisited.id).join(AnimalVisited).filter(Animal.id == AnimalVisited.animal_id).all()
+
+    #
+    # if animal is None:
+    #     response.status_code = 404
+    #     return {"message": "animal not found"}
+    # return {"id": animal.id,
+    #         "animalTypes": animal.animalTypes,
+    #         "weight": animal.weight, "length": animal.lenght, "height": animal.height,
+    #         "gender": animal.gender, "lifeStatus": animal.lifeStatus, "chippingDateTime": animal.chippingDateTime,
+    #         "chipperId": animal.chipperId, "chippingLocationId": animal.chippingLocationId,
+    #         "visitedLocations": animal.visitedLocations_id, "deathDateTime": animal.deathDateTime}
