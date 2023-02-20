@@ -159,19 +159,19 @@ def search_animals(request: Request, response: Response):
 @app.get("/animals/{animalId}", status_code=200)
 def get_animal(response: Response, animalId: int = Path()):
     """get animal by id"""
+    visitedlocations = []
     if animalId is None or animalId <= 0:
         response.status_code = 400
         return {"message": "animalId cannot be less than 1"}
-    #animal = db.get(Animal, animalId)
-    animal = db.query(Animal,  AnimalVisited.id).join(AnimalVisited).filter(Animal.id == AnimalVisited.animal_id).all()
-
-    #
-    # if animal is None:
-    #     response.status_code = 404
-    #     return {"message": "animal not found"}
-    # return {"id": animal.id,
-    #         "animalTypes": animal.animalTypes,
-    #         "weight": animal.weight, "length": animal.lenght, "height": animal.height,
-    #         "gender": animal.gender, "lifeStatus": animal.lifeStatus, "chippingDateTime": animal.chippingDateTime,
-    #         "chipperId": animal.chipperId, "chippingLocationId": animal.chippingLocationId,
-    #         "visitedLocations": animal.visitedLocations_id, "deathDateTime": animal.deathDateTime}
+    animal = db.get(Animal, animalId)
+    if animal is None:
+        response.status_code = 404
+        return {"message": "animal not found"}
+    for i in animal.visitedLocations:
+        visitedlocations.append(i.id)
+    return {"id": animal.id,
+            "animalTypes": animal.animalTypes,
+            "weight": animal.weight, "length": animal.lenght, "height": animal.height,
+            "gender": animal.gender, "lifeStatus": animal.lifeStatus, "chippingDateTime": animal.chippingDateTime,
+            "chipperId": animal.chipperId, "chippingLocationId": animal.chippingLocationId,
+            "visitedLocations": visitedlocations, "deathDateTime": animal.deathDateTime}

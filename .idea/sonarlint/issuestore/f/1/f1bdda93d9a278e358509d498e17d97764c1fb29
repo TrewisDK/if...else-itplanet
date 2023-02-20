@@ -1,20 +1,0 @@
-
-vpython:S117b"ZRename this local variable "chipperId" to match the regular expression ^[_a-z][a-z0-9_]*$.(Å¾¹Ÿûÿÿÿÿ
-python:S117f"cRename this local variable "chippingLocationId" to match the regular expression ^[_a-z][a-z0-9_]*$.(°¾á™ÿÿÿÿÿ
-spython:S117^"\Rename this local variable "endDateTime" to match the regular expression ^[_a-z][a-z0-9_]*$.(÷¡İ
-rpython:S117j"[Rename this local variable "lifeStatus" to match the regular expression ^[_a-z][a-z0-9_]*$.(°ÌÃÒ
-zpython:S117Z"^Rename this local variable "startDateTime" to match the regular expression ^[_a-z][a-z0-9_]*$.(±­ˆøÿÿÿÿ
-Spython:S1481f"6Remove the unused local variable "chippingLocationId".(°¾á™ÿÿÿÿÿ
-Spython:S1481h"6Remove the unused local variable "chippingLocationId".(±ª¾‘şÿÿÿÿ
-Gpython:S1481n"*Remove the unused local variable "gender".(ô¬›ıÿÿÿÿ
-Gpython:S1481p"*Remove the unused local variable "gender".(ùĞùøÿÿÿÿ
-Fpython:S1481j".Remove the unused local variable "lifeStatus".(°ÌÃÒ
-Kpython:S1481l".Remove the unused local variable "lifeStatus".(éÙÛÿşÿÿÿÿ
-qpython:S3776T"TRefactor this function to reduce its Cognitive Complexity from 35 to the 15 allowed.(ùê½ÿÿÿÿÿ
-@python:S108")Either remove or fill this block of code.(ã‘Û¾
-Apython:S108‹")Either remove or fill this block of code.(ã‘Û¾
-Apython:S108—")Either remove or fill this block of code.(ã‘Û¾
-lpython:S117 "TRename this parameter "animalId" to match the regular expression ^[_a-z][a-z0-9_]*$.( Òóš
-Opython:S1481¦"*Remove the unused local variable "animal".(İûÄóùÿÿÿÿ8ÏÆë‚å0
-Cpython:S125¥"Remove this commented out code.(çµ˜ôıÿÿÿÿ8è•å0
->python:S125¨"Remove this commented out code.(ÆÔœ¦8è•å0

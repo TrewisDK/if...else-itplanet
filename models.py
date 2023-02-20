@@ -57,6 +57,7 @@ class Animal(Base):
     lifeStatus = Column(String)
     chippingDateTime = Column(DateTime)
     chipperId = Column(Integer, ForeignKey(User.id))
+    visitedLocations = relationship('AnimalVisited')
     chippingLocationId = Column(BigInteger, ForeignKey(LocationPoint.id))
     deathDateTime = Column(DateTime)
 
