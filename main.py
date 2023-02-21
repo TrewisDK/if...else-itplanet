@@ -83,8 +83,6 @@ def account_data(response: Response, id: int = Path()):
 @app.get("/animals/search")
 def search_animals(request: Request, response: Response):
     query_params = request.query_params
-    search_data = db.query(Animal).all()
-    animals = []
 
     try:
         startDateTime = query_params["startDateTime"]
@@ -123,43 +121,68 @@ def search_animals(request: Request, response: Response):
         response.status_code = 400
         return {"message": "bad request"}
 
-    if startDateTime is None:
-        pass
-    else:
+    query = db.query(Animal)
+    filters = []
+    animals_searched = []
+    if startDateTime is not None:
         try:
-            datetime.fromisoformat(startDateTime)
+            filters.append(Animal.chippingDateTime >= datetime.fromisoformat(startDateTime))
         except ValueError:
             response.status_code = 400
             return {"message": "startDateTime must be in ISO 8601 format"}
-        for animal in search_data:
-            if datetime.fromisoformat(startDateTime) >= animal.chippingDateTime:
-                animals.append(animal)
-
-    if endDateTime is None:
-        pass
-    else:
+    if endDateTime is not None:
         try:
-            datetime.fromisoformat(startDateTime)
+            filters.append(Animal.chippingDateTime <= datetime.fromisoformat(endDateTime))
         except ValueError:
             response.status_code = 400
             return {"message": "startDateTime must be in ISO 8601 format"}
-        for animal in search_data:
-            if datetime.fromisoformat(startDateTime) <= animal.chippingDateTime:
-                animals.append(animal)
+    if chipperId is not None:
+        if chipperId <= 0:
+            response.status_code = 400
+            return {"message": "chipperId must be >0 "}
+        else:
+            filters.append(Animal.chipperId == int(chipperId))
+    if chippingLocationId is not None:
+        if chippingLocationId <= 0:
+            response.status_code = 400
+            return {"message": "chippingLocationId must be > 0"}
+        filters.append(Animal.chippingLocationId == int(chippingLocationId))
+    if lifeStatus is not None:
+        if lifeStatus != "ALIVE" and lifeStatus != "DEAD":
+            response.status_code = 400
+            return {"message": "lifeStatus must be 'ALIVE' or 'DEAD'"}
+        else:
+            filters.append(Animal.lifeStatus == lifeStatus)
+    if gender is not None:
+        if gender != "MALE" and gender != "FEMALE" and gender != "OTHER":
+            response.status_code = 400
+            return {"message": "gender must be 'MALE' or 'FEMALE' or 'OTHER'"}
+        else:
+            filters.append(Animal.gender == gender)
 
-    if chipperId is None:
-        pass
-    else:
-        for animal in search_data:
-            if animal.chipperId == int(chipperId):
-                animals.append(animal)
-    return {"data": animals}
+    result = query.filter(and_(*filters)).limit(size).offset(from_).all()
+
+    for animal in result:
+        animals_searched.append({
+            'id': animal.id,
+            'animalTypes': [type_id.id for type_id in animal.animalTypes],
+            'weight': animal.weight,
+            'length': animal.lenght,
+            'height': animal.height,
+            'gender': animal.gender,
+            'lifeStatus': animal.lifeStatus,
+            'chippingDateTime': animal.chippingDateTime,
+            'chipperId': animal.chipperId,
+            'chippingLocationId': animal.chippingLocationId,
+            'visitedLocations': [location.id for location in animal.visitedLocations],
+            'deathDateTime': animal.deathDateTime
+        })
+    return animals_searched
 
 
 @app.get("/animals/{animalId}", status_code=200)
 def get_animal(response: Response, animalId: int = Path()):
     """get animal by id"""
-    visitedlocations = []
     if animalId is None or animalId <= 0:
         response.status_code = 400
         return {"message": "animalId cannot be less than 1"}
@@ -167,11 +190,11 @@ def get_animal(response: Response, animalId: int = Path()):
     if animal is None:
         response.status_code = 404
         return {"message": "animal not found"}
-    for i in animal.visitedLocations:
-        visitedlocations.append(i.id)
+
     return {"id": animal.id,
-            "animalTypes": animal.animalTypes,
+            "animalTypes": [type_id.id for type_id in animal.animalTypes],
             "weight": animal.weight, "length": animal.lenght, "height": animal.height,
             "gender": animal.gender, "lifeStatus": animal.lifeStatus, "chippingDateTime": animal.chippingDateTime,
             "chipperId": animal.chipperId, "chippingLocationId": animal.chippingLocationId,
-            "visitedLocations": visitedlocations, "deathDateTime": animal.deathDateTime}
+            "visitedLocations": [location.id for location in animal.visitedLocations],
+            "deathDateTime": animal.deathDateTime}
