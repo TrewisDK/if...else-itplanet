@@ -1,11 +1,17 @@
 from typing import Union
 from datetime import datetime
 
-from fastapi import FastAPI, Body, Response, Request, Path
+from argon2.exceptions import VerifyMismatchError
+from validate_email import validate_email
+from argon2 import PasswordHasher
+import base64
+
+from fastapi import FastAPI, Response, Request, Path
 from models import User, AnimalType, Animal, LocationPoint, AnimalVisited
 from sqlalchemy import and_
 from sqlalchemy.orm import sessionmaker
 from models import engine
+import pydanticmodels
 
 SessionLocal = sessionmaker(autoflush=False, bind=engine)
 db = SessionLocal()
@@ -13,9 +19,36 @@ db = SessionLocal()
 app = FastAPI()
 
 
+def validate_auth(header):
+    try:
+        if header.startswith('Basic '):
+            data = header.split(" ")[1]
+            data = base64.b64decode(data).decode('utf-8').split(":")
+            user = db.query(User).filter(User.email == data[0])[0]
+            ph = PasswordHasher()
+            try:
+                if ph.verify(user.hashed_password, data[1]):
+                    return True
+            except VerifyMismatchError:
+                return False
+        else:
+            return False
+
+    except Exception as e:
+        print(e)
+        return False
+
+
 @app.get("/accounts/search")
 def search_accounts(request: Request, response: Response):
     """get user account by id"""
+    try:
+        auth = request.headers["Authorization"]
+        if validate_auth(auth) is not True:
+            response.status_code = 401
+            return {"message": "Invalid authorization data"}
+    except KeyError:
+        pass
     query_params = request.query_params
     accounts_searched = []
 
@@ -64,8 +97,15 @@ def search_accounts(request: Request, response: Response):
 
 
 @app.get("/accounts/{id}", status_code=200)
-def account_data(response: Response, id: int = Path()):
+def account_data(request: Request, response: Response, id: int = Path()):
     """search user account"""
+    try:
+        auth = request.headers["Authorization"]
+        if validate_auth(auth) is not True:
+            response.status_code = 401
+            return {"message": "Invalid authorization data"}
+    except KeyError:
+        pass
     if id < 1 or id is None:
         response.status_code = 400
         return {"message": "id cannot be less than 1"}
@@ -82,6 +122,14 @@ def account_data(response: Response, id: int = Path()):
 
 @app.get("/animals/{animalId}/locations", status_code=200)
 def get_visited_locations(request: Request, response: Response, animalId: int = Path()):
+    """pass"""
+    try:
+        auth = request.headers["Authorization"]
+        if validate_auth(auth) is not True:
+            response.status_code = 401
+            return {"message": "Invalid authorization data"}
+    except KeyError:
+        pass
     query_params = request.query_params
     filtered_locations = []
 
@@ -141,6 +189,14 @@ def get_visited_locations(request: Request, response: Response, animalId: int = 
 
 @app.get("/animals/search")
 def search_animals(request: Request, response: Response):
+    """pass"""
+    try:
+        auth = request.headers["Authorization"]
+        if validate_auth(auth) is not True:
+            response.status_code = 401
+            return {"message": "Invalid authorization data"}
+    except KeyError:
+        pass
     query_params = request.query_params
 
     try:
@@ -240,8 +296,15 @@ def search_animals(request: Request, response: Response):
 
 
 @app.get("/animals/{animalId}", status_code=200)
-def get_animal(response: Response, animalId: int = Path()):
+def get_animal(request: Request, response: Response, animalId: int = Path()):
     """get animal by id"""
+    try:
+        auth = request.headers["Authorization"]
+        if validate_auth(auth) is not True:
+            response.status_code = 401
+            return {"message": "Invalid authorization data"}
+    except KeyError:
+        pass
     if animalId is None or animalId <= 0:
         response.status_code = 400
         return {"message": "animalId cannot be less than 1"}
@@ -260,8 +323,15 @@ def get_animal(response: Response, animalId: int = Path()):
 
 
 @app.get("/animals/types/{typeId}", status_code=200)
-def get_animal_type(response: Response, typeId: int = Path()):
+def get_animal_type(request: Request, response: Response, typeId: int = Path()):
     """get animal type by id"""
+    try:
+        auth = request.headers["Authorization"]
+        if validate_auth(auth) is not True:
+            response.status_code = 401
+            return {"message": "Invalid authorization data"}
+    except KeyError:
+        pass
     if typeId is None or typeId <= 0:
         response.status_code = 400
         return {"message": "bad data"}
@@ -277,8 +347,15 @@ def get_animal_type(response: Response, typeId: int = Path()):
 
 
 @app.get("/locations/{pointId}", status_code=200)
-def get_location(response: Response, pointId: int = Path()):
+def get_location(request: Request, response: Response, pointId: int = Path()):
     """get location by id"""
+    try:
+        auth = request.headers["Authorization"]
+        if validate_auth(auth) is not True:
+            response.status_code = 401
+            return {"message": "Invalid authorization data"}
+    except KeyError:
+        pass
     if pointId is None or pointId <= 0:
         response.status_code = 400
         return {"message": "bad data"}
@@ -291,4 +368,55 @@ def get_location(response: Response, pointId: int = Path()):
         "id": location.id,
         "latitude": location.latitude,
         "longitude": location.longitude
+    }
+
+
+@app.post("/registration", status_code=201)
+def registration(request: Request, response: Response, account: pydanticmodels.Account):
+    """registration account"""
+    try:
+        auth = request.headers["Authorization"]
+        if validate_auth(auth) is not True:
+            response.status_code = 401
+            return {"message": "Invalid authorization data"}
+    except KeyError:
+        pass
+    try:
+        auth = request.headers["Authorization"]
+        response.status_code = 403
+        return {"message": "auth user"}
+    except KeyError:
+        pass
+    if account.firstName is None or account.firstName == "" or account.firstName.isspace():
+        response.status_code = 400
+        return {"message": "bad request"}
+    if account.lastName is None or account.lastName == "" or account.lastName.isspace():
+        response.status_code = 400
+        return {"message": "bad request"}
+    if account.email is None or account.email == "" or account.email.isspace() or validate_email(
+            account.email) == False:
+        response.status_code = 400
+        return {"message": "bad request"}
+    if account.password is None or account.password == "" or account.password.isspace():
+        response.status_code = 400
+        return {"message": "bad request"}
+    if len(db.query(User).filter(User.email == account.email).all()) > 0:
+        response.status_code = 409
+        return {"message": "an account with this email already exists"}
+    ph = PasswordHasher()
+    hashed_password = ph.hash(account.password)
+    new_account = User(
+        first_name=account.firstName,
+        last_name=account.lastName,
+        email=account.email,
+        hashed_password=hashed_password
+    )
+    db.add(new_account)
+    db.commit()
+
+    return {
+        "id": new_account.id,
+        "firstName": new_account.first_name,
+        "lastName": new_account.last_name,
+        "email": new_account.email
     }
