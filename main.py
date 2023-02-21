@@ -80,6 +80,65 @@ def account_data(response: Response, id: int = Path()):
             "email": account.email}
 
 
+@app.get("/animals/{animalId}/locations", status_code=200)
+def get_visited_locations(request: Request, response: Response, animalId: int = Path()):
+    query_params = request.query_params
+    filtered_locations = []
+
+    try:
+        startDateTime = query_params["startDateTime"]
+    except KeyError:
+        startDateTime = None
+    try:
+        endDateTime = query_params['endDateTime']
+    except KeyError:
+        endDateTime = None
+    try:
+        from_ = query_params["from"]
+    except KeyError:
+        from_ = 0
+    try:
+        size = query_params["size"]
+    except KeyError:
+        size = 10
+
+    if int(from_) < 0 or int(size) <= 0:
+        response.status_code = 400
+        return {"message": "bad request"}
+
+    if animalId <= 0 or animalId is None:
+        response.status_code = 400
+        return {"message": "bad request"}
+
+    animal = db.get(Animal, animalId)
+    if animal is None:
+        response.status_code = 404
+        return {"message": "animal not found"}
+    locations = db.query(AnimalVisited)
+    filters = []
+    filters.append(AnimalVisited.animal_id == animalId)
+    if startDateTime is not None:
+        try:
+            filters.append(AnimalVisited.datetime_of_visited_location >= datetime.fromisoformat(startDateTime))
+        except ValueError:
+            response.status_code = 400
+            return {"message": "startDateTime must be in ISO 8601 format"}
+    if endDateTime is not None:
+        try:
+            filters.append(AnimalVisited.datetime_of_visited_location <= datetime.fromisoformat(endDateTime))
+        except ValueError:
+            response.status_code = 400
+            return {"message": "endDateTime must be in ISO 8601 format"}
+    result = locations.filter(and_(*filters)).limit(size).offset(from_).all()
+    for location in result:
+        filtered_locations.append({
+            "id": location.id,
+            "dateTimeOfVisitLocationPoint": location.datetime_of_visited_location,
+            "locationPointId": location.location
+        })
+    return filtered_locations
+
+
 @app.get("/animals/search")
 def search_animals(request: Request, response: Response):
     query_params = request.query_params
@@ -117,7 +176,7 @@ def search_animals(request: Request, response: Response):
     except KeyError:
         size = 10
 
-    if int(from_) < 0 or int(size) < 1:
+    if int(from_) < 0 or int(size) <= 0:
         response.status_code = 400
         return {"message": "bad request"}
 
@@ -135,7 +194,7 @@ def search_animals(request: Request, response: Response):
             filters.append(Animal.chippingDateTime <= datetime.fromisoformat(endDateTime))
         except ValueError:
             response.status_code = 400
-            return {"message": "startDateTime must be in ISO 8601 format"}
+            return {"message": "endDateTime must be in ISO 8601 format"}
     if chipperId is not None:
         if chipperId <= 0:
             response.status_code = 400
@@ -198,3 +257,38 @@ def get_animal(response: Response, animalId: int = Path()):
             "chipperId": animal.chipperId, "chippingLocationId": animal.chippingLocationId,
             "visitedLocations": [location.id for location in animal.visitedLocations],
             "deathDateTime": animal.deathDateTime}
+
+
+@app.get("/animals/types/{typeId}", status_code=200)
+def get_animal_type(response: Response, typeId: int = Path()):
+    """get animal type by id"""
+    if typeId is None or typeId <= 0:
+        response.status_code = 400
+        return {"message": "bad data"}
+    animal_type = db.get(AnimalType, typeId)
+    if animal_type is None:
+        response.status_code = 404
+        return {"message": "animal type not found"}
+
+    return {
+        "id": animal_type.id,
+        "type": animal_type.animaltype
+    }
+
+
+@app.get("/locations/{pointId}", status_code=200)
+def get_location(response: Response, pointId: int = Path()):
+    """get location by id"""
+    if pointId is None or pointId <= 0:
+        response.status_code = 400
+        return {"message": "bad data"}
+    location = db.get(LocationPoint, pointId)
+    if location is None:
+        response.status_code = 404
+        return {"message": "location not found"}
+
+    return {
+        "id": location.id,
+        "latitude": location.latitude,
+        "longitude": location.longitude
+    }
