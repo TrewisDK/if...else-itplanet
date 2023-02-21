@@ -1,18 +1,6 @@
-from sqlalchemy import create_engine
-from sqlalchemy.ext.associationproxy import association_proxy
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.sql.operators import ilike_op
-from sqlalchemy import and_
-from sqlalchemy import Column, Integer, String, ARRAY, BigInteger, Float, DateTime, ForeignKey, Table, Double
-from sqlalchemy.orm import sessionmaker, Session, relationship
-
-SQLALCHEMY_DATABASE_URL = "postgresql://postgres:VfRFwObDDvvW@127.0.0.1/itplanet"
-
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL
-)
-
-Base = declarative_base()
+from sqlalchemy import Column, Integer, String, BigInteger, Float, DateTime, ForeignKey, Table, Double
+from sqlalchemy.orm import relationship
+from database import Base
 
 animal_types = Table('animal_types', Base.metadata,
                      Column('animal_id', BigInteger(), ForeignKey('animals.id')),
@@ -71,4 +59,4 @@ class AnimalVisited(Base):
     location = Column(BigInteger, ForeignKey(LocationPoint.id))
 
 
-Base.metadata.create_all(bind=engine)
+
