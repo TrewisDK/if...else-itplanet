@@ -27,7 +27,7 @@ def registration(request: Request, response: Response, account: schemas.Account)
         response.status_code = 400
         return {"message": "bad request"}
     if account.email is None or account.email == "" or account.email.isspace() or validate_email(
-            account.email) == False:
+            account.email) is not True:
         response.status_code = 400
         return {"message": "bad request"}
     if account.password is None or account.password == "" or account.password.isspace():

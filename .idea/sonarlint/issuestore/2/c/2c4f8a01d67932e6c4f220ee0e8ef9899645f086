@@ -1,0 +1,17 @@
+
+ppython:S1192,"LDefine a constant instead of duplicating this literal "bad request" 3 times.(úğá›ÿÿÿÿÿ8µœ­ç0
+zpython:S1192"[Define a constant instead of duplicating this literal "Invalid authorization data" 4 times.(½¿¦ì8µœ­ç0
+rpython:S117"TRename this parameter "animalId" to match the regular expression ^[_a-z][a-z0-9_]*$.(ºÈÓû8µœ­ç0
+python:S117"\Rename this local variable "endDateTime" to match the regular expression ^[_a-z][a-z0-9_]*$.(ôÆåûÿÿÿÿ8µœ­ç0
+python:S117"^Rename this local variable "startDateTime" to match the regular expression ^[_a-z][a-z0-9_]*$.(±­ˆøÿÿÿÿ8µœ­ç0
+spython:S3776"TRefactor this function to reduce its Cognitive Complexity from 18 to the 15 allowed.(ºÈÓû8µœ­ç0
+Bpython:S125"Remove this commented out code.(ÁªÅüÿÿÿÿ8µœ­ç0
+}python:S117d"ZRename this local variable "chipperId" to match the regular expression ^[_a-z][a-z0-9_]*$.(Å¾¹Ÿûÿÿÿÿ8µœ­ç0
+†python:S117h"cRename this local variable "chippingLocationId" to match the regular expression ^[_a-z][a-z0-9_]*$.(°¾á™ÿÿÿÿÿ8µœ­ç0
+zpython:S117`"\Rename this local variable "endDateTime" to match the regular expression ^[_a-z][a-z0-9_]*$.(÷¡İ8µœ­ç0
+ypython:S117l"[Rename this local variable "lifeStatus" to match the regular expression ^[_a-z][a-z0-9_]*$.(°ÌÃÒ8µœ­ç0
+python:S117\"^Rename this local variable "startDateTime" to match the regular expression ^[_a-z][a-z0-9_]*$.(±­ˆøÿÿÿÿ8¶œ­ç0
+xpython:S3776P"TRefactor this function to reduce its Cognitive Complexity from 36 to the 15 allowed.(ùê½ÿÿÿÿÿ8¶œ­ç0
+Bpython:S125Q"Remove this commented out code.(ÁªÅüÿÿÿÿ8¶œ­ç0
+spython:S117¼"TRename this parameter "animalId" to match the regular expression ^[_a-z][a-z0-9_]*$.(æßö¶8¶œ­ç0
+qpython:S117×"RRename this parameter "typeId" to match the regular expression ^[_a-z][a-z0-9_]*$.(–æßú8¶œ­ç0

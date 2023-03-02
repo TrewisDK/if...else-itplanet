@@ -9,7 +9,7 @@ from models import User
 db = SessionLocal()
 
 
-def validate_auth(header):
+def validate_auth(header, return_email=False):
     try:
         if header.startswith('Basic '):
             data = header.split(" ")[1]
@@ -18,7 +18,10 @@ def validate_auth(header):
             ph = PasswordHasher()
             try:
                 if ph.verify(user.hashed_password, data[1]):
-                    return True
+                    if return_email:
+                        return [True, data[0]]
+                    else:
+                        return True
             except VerifyMismatchError:
                 return False
         else:

@@ -1,5 +1,8 @@
 from fastapi import Response, Request, Path, APIRouter
-from models import User
+from validate_email import validate_email
+
+import schemas
+from models import User, Animal
 from sqlalchemy import and_
 from database import SessionLocal
 from utils.validate_auth import validate_auth
@@ -87,3 +90,79 @@ def account_data(request: Request, response: Response, id: int = Path()):
 
     return {"id": account.id, "firsName": account.first_name, "lastName": account.last_name,
             "email": account.email}
+
+
+@router.put("/{id}")
+def update_account_data(request: Request, response: Response, account: schemas.Account, id: int = Path()):
+    account_update = db.get(User, id)
+    try:
+        auth = request.headers["Authorization"]
+        validate = validate_auth(auth, return_email=True)
+
+        if validate[0] is not True:
+            response.status_code = 401
+            return {"message": "Invalid authorization data"}
+        if account_update is None or validate[1] != account_update.email:
+            response.status_code = 403
+            return {"message": "Bad account"}
+        if id is None or id <= 0:
+            response.status_code = 400
+            return {"message": "Bad data"}
+        if account.firstName is None or account.firstName == "" or account.firstName.isspace():
+            response.status_code = 400
+            return {"message": "Bad data"}
+        if account.lastName is None or account.lastName == "" or account.lastName.isspace():
+            response.status_code = 400
+            return {"message": "Bad data"}
+        if account.email is None or account.email == "" or account.email.isspace() or validate_email(
+                account.email) is not True:
+            response.status_code = 400
+            return {"message": "Bad data"}
+        if account.password is None or account.password == "" or account.password.isspace():
+            response.status_code = 400
+            return {"message": "Bad data"}
+        user_account = db.query(User).filter_by(id=id).first()
+        if len(db.query(User).filter_by(email=account.email).all()) > 0 and user_account.email != account.email:
+            response.status_code = 409
+            return {"message": "An account with this email already exists"}
+        user_account.first_name = account.firstName
+        user_account.last_name = account.lastName
+        user_account.email = account.email
+        db.commit()
+        response.status_code = 200
+        return {
+            "id": id,
+            "firstName": account.firstName,
+            "lastName": account.lastName,
+            "email": account.email
+        }
+    except (KeyError, TypeError):
+        response.status_code = 401
+        return {"message": "Invalid authorization data"}
+
+
+@router.delete("/{id}")
+def delete_account(request: Request, response: Response, id: int = Path()):
+    account_update = db.get(User, id)
+    try:
+        auth = request.headers["Authorization"]
+        validate = validate_auth(auth, return_email=True)
+
+        if validate[0] is not True:
+            response.status_code = 401
+            return {"message": "Invalid authorization data"}
+        if account_update is None or validate[1] != account_update.email:
+            response.status_code = 403
+            return {"message": "Bad account"}
+        if id is None or id <= 0 or len(db.query(Animal).filter_by(chipperId=id).all()) > 0:
+            response.status_code = 400
+            return {"message": "Bad data"}
+        account = db.query(User).get(id)
+        db.delete(account)
+        db.commit()
+        response.status_code = 200
+        return {}
+    except (KeyError, TypeError) as e:
+        print(e)
+        response.status_code = 401
+        return {"message": "Invalid authorization data"}
