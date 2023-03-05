@@ -1,5 +1,5 @@
 from fastapi import Response, Request, Path, APIRouter
-from models import LocationPoint
+from models import LocationPoint, Animal, AnimalVisited
 from database import SessionLocal
 from utils.validate_auth import validate_auth
 import schemas
@@ -79,7 +79,7 @@ def change_location(request: Request, response: Response, new_location: schemas.
         if validate[0] is not True:
             response.status_code = 401
             return {"message": "Invalid authorization data"}
-        if pointId is None:
+        if pointId is None or pointId <= 0:
             response.status_code = 400
             return {"message": "bad pointId"}
         if new_location.latitude is None or new_location.latitude < -90 or new_location.latitude > 90:
@@ -110,3 +110,30 @@ def change_location(request: Request, response: Response, new_location: schemas.
         return {"message": "Invalid authorization data"}
 
 
+@router.delete("/{pointId}", status_code=200)
+def delete_location(request: Request, response: Response, pointId: int = Path()):
+    try:
+        auth = request.headers["Authorization"]
+        validate = validate_auth(auth, return_email=True)
+
+        if validate[0] is not True:
+            response.status_code = 401
+            return {"message": "Invalid authorization data"}
+        if pointId is None or pointId <= 0 or len(
+                db.query(Animal).filter_by(chippingLocationId=pointId).all()) > 0 or len(
+                db.query(AnimalVisited).filter_by(location=pointId).all()) > 0:
+            response.status_code = 400
+            return {"message": "bad data"}
+        location = db.query(LocationPoint).get(pointId)
+        if location is None:
+            response.status_code = 404
+            return {"message": "Location not found"}
+        db.delete(location)
+        db.commit()
+        return {}
+
+
+    except (KeyError, TypeError) as e:
+        print(e)
+        response.status_code = 401
+        return {"message": "Invalid authorization data"}
