@@ -46,7 +46,8 @@ def add_location(request: Request, response: Response, new_location: schemas.Loc
 
 
 @router.get("/{pointId}", status_code=200)
-def get_location(request: Request, response: Response, pointId: int = Path()):
+@router.get("/", status_code=400)
+def get_location(request: Request, response: Response, pointId: int = None):
     """get location by id"""
     try:
         auth = request.headers["Authorization"]
@@ -71,7 +72,8 @@ def get_location(request: Request, response: Response, pointId: int = Path()):
 
 
 @router.put("/{pointId}", status_code=200)
-def change_location(request: Request, response: Response, new_location: schemas.Locations, pointId: int = Path()):
+@router.put("/", status_code=400)
+def change_location(request: Request, response: Response, new_location: schemas.Locations, pointId: int = None):
     try:
         auth = request.headers["Authorization"]
         validate = validate_auth(auth, return_email=True)
@@ -111,7 +113,8 @@ def change_location(request: Request, response: Response, new_location: schemas.
 
 
 @router.delete("/{pointId}", status_code=200)
-def delete_location(request: Request, response: Response, pointId: int = Path()):
+@router.delete("/", status_code=400)
+def delete_location(request: Request, response: Response, pointId: int = None):
     try:
         auth = request.headers["Authorization"]
         validate = validate_auth(auth, return_email=True)

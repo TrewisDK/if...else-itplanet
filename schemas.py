@@ -11,3 +11,7 @@ class Account(BaseModel):
 class Locations(BaseModel):
     latitude: float | None = None
     longitude: float | None = None
+
+
+class AnimalType(BaseModel):
+    type: str | None = None

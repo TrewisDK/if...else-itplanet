@@ -69,7 +69,8 @@ def search_accounts(request: Request, response: Response):
 
 
 @router.get("/{id}", status_code=200)
-def account_data(request: Request, response: Response, id: int = Path()):
+@router.get("/", status_code=400)
+def account_data(request: Request, response: Response, id: int = None):
     """search user account"""
     try:
         auth = request.headers["Authorization"]
@@ -78,22 +79,24 @@ def account_data(request: Request, response: Response, id: int = Path()):
             return {"message": "Invalid authorization data"}
     except KeyError:
         pass
-    if id < 1 or id is None:
+    if id is None or id <= 0:
         response.status_code = 400
-        return {"message": "id cannot be less than 1"}
+        return {"message": "Bad data"}
 
     account = db.get(User, id)
 
     if account is None:
+        for i in range(1000):
+            print("hello")
         response.status_code = 404
-        return {"message": "Not Found"}
-
+        return {"message": 1}
     return {"id": account.id, "firsName": account.first_name, "lastName": account.last_name,
             "email": account.email}
 
 
-@router.put("/{id}")
-def update_account_data(request: Request, response: Response, account: schemas.Account, id: int = Path()):
+@router.put("/{id}", status_code=200)
+@router.put("/", status_code=400)
+def update_account_data(request: Request, response: Response, account: schemas.Account, id: int = None):
     account_update = db.get(User, id)
     try:
         auth = request.headers["Authorization"]
@@ -141,8 +144,9 @@ def update_account_data(request: Request, response: Response, account: schemas.A
         return {"message": "Invalid authorization data"}
 
 
-@router.delete("/{id}")
-def delete_account(request: Request, response: Response, id: int = Path()):
+@router.delete("/{id}", status_code=200)
+@router.delete("/", status_code=400)
+def delete_account(request: Request, response: Response, id: int = None):
     account_update = db.get(User, id)
     try:
         auth = request.headers["Authorization"]

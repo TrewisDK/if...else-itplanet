@@ -1,16 +1,17 @@
 from fastapi import Response, Request, Path, APIRouter
-from models import Animal, AnimalVisited, AnimalType
+from models import Animal, AnimalVisited, AnimalType, animal_types
 from datetime import datetime
-from sqlalchemy import and_
+from sqlalchemy import and_, select
 from database import SessionLocal
 from utils.validate_auth import validate_auth
+import schemas
 
 db = SessionLocal()
 router = APIRouter()
 
 
 @router.get("/{animalId}/locations", status_code=200)
-def get_visited_locations(request: Request, response: Response, animalId: int = Path()):
+def get_visited_locations(request: Request, response: Response, animalId: int = None):
     """pass"""
     try:
         auth = request.headers["Authorization"]
@@ -43,7 +44,7 @@ def get_visited_locations(request: Request, response: Response, animalId: int = 
         response.status_code = 400
         return {"message": "bad request"}
 
-    if animalId <= 0 or animalId is None:
+    if animalId is None or animalId <= 0:
         response.status_code = 400
         return {"message": "bad request"}
 
@@ -185,7 +186,8 @@ def search_animals(request: Request, response: Response):
 
 
 @router.get("/{animalId}", status_code=200)
-def get_animal(request: Request, response: Response, animalId: int = Path()):
+@router.get("/", status_code=400)
+def get_animal(request: Request, response: Response, animalId: int = None):
     """get animal by id"""
     try:
         auth = request.headers["Authorization"]
@@ -212,7 +214,8 @@ def get_animal(request: Request, response: Response, animalId: int = Path()):
 
 
 @router.get("/types/{typeId}", status_code=200)
-def get_animal_type(request: Request, response: Response, typeId: int = Path()):
+@router.get("/types/", status_code=400)
+def get_animal_type(request: Request, response: Response, typeId: int = None):
     """get animal type by id"""
     try:
         auth = request.headers["Authorization"]
@@ -233,3 +236,92 @@ def get_animal_type(request: Request, response: Response, typeId: int = Path()):
         "id": animal_type.id,
         "type": animal_type.animaltype
     }
+
+
+@router.post("/types", status_code=201)
+def add_animal_type(request: Request, response: Response, animalType: schemas.AnimalType):
+    try:
+        auth = request.headers["Authorization"]
+        validate = validate_auth(auth, return_email=True)
+
+        if validate[0] is not True:
+            response.status_code = 401
+            return {"message": "Invalid authorization data"}
+        if animalType.type is None or animalType.type == "" or animalType.type.isspace():
+            response.status_code = 400
+            return {"message": "Bad data"}
+        if len(db.query(AnimalType).filter_by(animaltype=animalType.type).all()) > 0:
+            response.status_code = 409
+            return {"message": "This type already exists "}
+        new_animal_type = AnimalType(
+            animaltype=animalType.type
+        )
+        db.add(new_animal_type)
+        db.commit()
+        return {
+            "id": new_animal_type.id,
+            "type": new_animal_type.animaltype
+        }
+
+    except (KeyError, TypeError):
+        response.status_code = 401
+        return {"message": "Invalid authorization data"}
+
+
+@router.put('/types/{typeId}', status_code=200)
+@router.put('/types/', status_code=400)
+def change_type(request: Request, response: Response, animalType: schemas.AnimalType, typeId: int = None):
+    try:
+        auth = request.headers["Authorization"]
+        validate = validate_auth(auth, return_email=True)
+
+        if validate[0] is not True:
+            response.status_code = 401
+            return {"message": "Invalid authorization data"}
+        if typeId is None or typeId <= 0 or animalType.type is None or animalType.type == "" or animalType.type.isspace():
+            response.status_code = 400
+            return {"message": "Bad data"}
+        if len(db.query(AnimalType).filter_by(animaltype=animalType.type).all()) > 0:
+            response.status_code = 409
+            return {"message": "This type already exists "}
+        animalTypeNow = db.query(AnimalType).get(typeId)
+        if animalTypeNow is None:
+            response.status_code = 404
+            return {"message": "Not Found"}
+        animalTypeNow.animaltype = animalType.type
+        db.commit()
+        return {
+            "id": animalTypeNow.id,
+            "type": animalTypeNow.animaltype
+        }
+
+    except (KeyError, TypeError):
+        response.status_code = 401
+        return {"message": "Invalid authorization data"}
+
+
+@router.delete('/types/{typeId}', status_code=200)
+@router.delete('/types/', status_code=400)
+def delete_animal_type(request: Request, response: Response, typeId: int = None):
+    try:
+        auth = request.headers["Authorization"]
+        validate = validate_auth(auth, return_email=True)
+
+        if validate[0] is not True:
+            response.status_code = 401
+            return {"message": "Invalid authorization data"}
+        animalType = db.query(AnimalType).get(typeId)
+        if animalType is None:
+            response.status_code = 404
+            return {"message": "Not Found"}
+        if typeId is None or typeId <= 0 or len(db.query(Animal).join(Animal.animalTypes).filter(AnimalType.id == typeId).all()):
+            response.status_code = 400
+            return {"message": "Bad data"}
+
+        db.delete(animalType)
+        db.commit()
+        return {}
+
+    except (KeyError, TypeError):
+        response.status_code = 401
+        return {"message": "Invalid authorization data"}
