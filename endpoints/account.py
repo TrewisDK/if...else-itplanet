@@ -1,4 +1,4 @@
-from fastapi import Response, Request, Path, APIRouter
+from fastapi import Response, Request, APIRouter
 from validate_email import validate_email
 
 import schemas

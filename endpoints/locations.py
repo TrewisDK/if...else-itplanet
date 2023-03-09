@@ -1,9 +1,8 @@
-from fastapi import Response, Request, Path, APIRouter
+from fastapi import Response, Request, APIRouter
 from models import LocationPoint, Animal, AnimalVisited
 from database import SessionLocal
 from utils.validate_auth import validate_auth
 import schemas
-from pydantic import BaseModel
 
 db = SessionLocal()
 router = APIRouter()
