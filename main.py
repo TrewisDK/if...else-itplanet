@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, FastAPI
 
 from database import Base, engine
 from endpoints import account, animals, locations, registration, animals_types, animals_visited_locations

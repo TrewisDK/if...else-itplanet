@@ -1,9 +1,10 @@
-from fastapi import Response, Request, APIRouter
+from fastapi import Response, Request, APIRouter, Path
 from models import Animal, AnimalVisited
 from datetime import datetime
 from sqlalchemy import and_
 from database import SessionLocal
 from utils.validate_auth import validate_auth
+from typing import Optional
 import schemas
 
 db = SessionLocal()

@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import List, Optional
 
 
 class Account(BaseModel):
@@ -15,3 +16,14 @@ class Locations(BaseModel):
 
 class AnimalType(BaseModel):
     type: str | None = None
+
+
+class Animal(BaseModel):
+    animalTypes: List[Optional[int]] | None = None
+    weight: float | None = None
+    length: float | None = None
+    height: float | None = None
+    gender: str | None = None
+    chipperId: int | None = None
+    chippingLocationId: int | None = None
+    lifeStatus: str | None = None
