@@ -76,3 +76,5 @@ def get_visited_locations(request: Request, response: Response, animalId: int = 
             "locationPointId": location.location
         })
     return filtered_locations
+
+
