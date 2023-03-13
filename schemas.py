@@ -27,3 +27,8 @@ class Animal(BaseModel):
     chipperId: int | None = None
     chippingLocationId: int | None = None
     lifeStatus: str | None = None
+
+
+class NewType(BaseModel):
+    oldTypeId: int | None = None
+    newTypeId: int | None = None

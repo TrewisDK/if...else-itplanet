@@ -213,7 +213,7 @@ def create_new_animal(request: Request, response: Response, animal: schemas.Anim
 
 
 @router.put("/{animalId}", status_code=200)
-@router.put("/", status_code=200)
+@router.put("/", status_code=400)
 def change_animal(request: Request, response: Response, animal: schemas.Animal, animalId: int = None):
     try:
         auth = request.headers["Authorization"]
@@ -293,6 +293,143 @@ def delete_animal(request: Request, response: Response, animalId: int = None):
         db.delete(animal)
         db.commit()
         return {}
+    except (KeyError, TypeError) as e:
+        print(e)
+        response.status_code = 401
+        return {"message": "Invalid authorization data"}
+
+
+@router.post("/{animalId}/types/{typeId}", status_code=201)
+@router.post("//types/{typeId}", status_code=400)
+@router.post("/{animalId}/types/", status_code=400)
+def add_animal_type(request: Request, response: Response, animalId: int = None, typeId: int = None):
+    try:
+        auth = request.headers["Authorization"]
+        validate = validate_auth(auth, return_email=True)
+
+        if validate[0] is not True:
+            response.status_code = 401
+            return {"message": "Invalid authorization data"}
+        if animalId is None or animalId <= 0 or typeId is None or typeId <= 0:
+            response.status_code = 400
+            return {"message": "Bad data"}
+        animal = db.query(Animal).get(animalId)
+        type = db.query(AnimalType).get(typeId)
+        if animal is None or type is None:
+            response.status_code = 404
+            return {"message": "Not Found"}
+        if type.id in [type_id.id for type_id in animal.animalTypes]:
+            response.status_code = 409
+            return {"message": "type already exist"}
+        add_type = animal_types.insert().values(animal_id=animalId, animal_type_id=typeId)
+        db.execute(add_type)
+        db.commit()
+        return {
+            "id": animal.id,
+            "animalTypes": [type_id.id for type_id in animal.animalTypes],
+            "weight": animal.weight,
+            "length": animal.lenght,
+            "height": animal.height,
+            "gender": animal.gender,
+            "lifeStatus": animal.lifeStatus,
+            "chippingDateTime": animal.chippingDateTime,
+            "chipperId": animal.chipperId,
+            "chippingLocationId": animal.chippingLocationId,
+            "visitedLocations": [location.id for location in animal.visitedLocations],
+            "deathDateTime": animal.deathDateTime
+        }
+    except (KeyError, TypeError) as e:
+        print(e)
+        response.status_code = 401
+        return {"message": "Invalid authorization data"}
+
+
+@router.put("/{animalId}/types/", status_code=200)
+def update_animal_types(request: Request, response: Response, type: schemas.NewType, animalId: int = None):
+    try:
+        auth = request.headers["Authorization"]
+        validate = validate_auth(auth, return_email=True)
+
+        if validate[0] is not True:
+            response.status_code = 401
+            return {"message": "Invalid authorization data"}
+        if animalId is None or animalId <= 0 or type.oldTypeId is None or type.oldTypeId <= 0 or type.newTypeId is None or type.newTypeId <= 0:
+            response.status_code = 400
+            return {"message": "Bad data"}
+        animal = db.query(Animal).get(animalId)
+        newTypeId = db.query(AnimalType).get(type.newTypeId)
+        oldTypeId = db.query(AnimalType).get(type.oldTypeId)
+        if animal is None or newTypeId is None or oldTypeId is None or oldTypeId.id not in [type_id.id for type_id in animal.animalTypes]:
+            response.status_code = 404
+            return {"message": "Not Found"}
+        if newTypeId.id in [type_id.id for type_id in animal.animalTypes]:
+            response.status_code = 409
+            return {"message": "Animal has newTypeId"}
+        if newTypeId.id in [type_id.id for type_id in animal.animalTypes] and oldTypeId.id in [type_id.id for type_id in animal.animalTypes]:
+            response.status_code = 409
+            return {"message": "Animal has newTypeId and oldTypeId"}
+        delete_old_type = animal_types.delete().filter_by(animal_id=animalId, animal_type_id=oldTypeId.id)
+        update_type = animal_types.insert().values(animal_id=animalId, animal_type_id=newTypeId.id)
+        db.execute(delete_old_type)
+        db.execute(update_type)
+        db.commit()
+        return {
+            "id": animal.id,
+            "animalTypes": [type_id.id for type_id in animal.animalTypes],
+            "weight": animal.weight,
+            "length": animal.lenght,
+            "height": animal.height,
+            "gender": animal.gender,
+            "lifeStatus": animal.lifeStatus,
+            "chippingDateTime": animal.chippingDateTime,
+            "chipperId": animal.chipperId,
+            "chippingLocationId": animal.chippingLocationId,
+            "visitedLocations": [location.id for location in animal.visitedLocations],
+            "deathDateTime": animal.deathDateTime
+        }
+    except (KeyError, TypeError) as e:
+        print(e)
+        response.status_code = 401
+        return {"message": "Invalid authorization data"}
+
+
+@router.delete("/{animalId}/types/{typeId}", status_code=200)
+def delete_animal_type(request: Request, response: Response, animalId: int = None, typeId: int = None):
+    try:
+        auth = request.headers["Authorization"]
+        validate = validate_auth(auth, return_email=True)
+
+        if validate[0] is not True:
+            response.status_code = 401
+            return {"message": "Invalid authorization data"}
+        if animalId is None or animalId <= 0 or typeId is None or typeId <= 0:
+            response.status_code = 400
+            return {"message": "Bad data"}
+        animal = db.query(Animal).get(animalId)
+        type = db.query(AnimalType).get(typeId)
+        if animal is None or type is None or typeId not in [type_id.id for type_id in animal.animalTypes]:
+            response.status_code = 404
+            return {"message": "Not Found"}
+        if len([type_id.id for type_id in animal.animalTypes]) == 1 and typeId in [type_id.id for type_id in animal.animalTypes]:
+            response.status_code = 400
+            return {"message": "Bad data"}
+        delete_type = animal_types.delete().filter_by(animal_id=animalId, animal_type_id=typeId)
+        db.execute(delete_type)
+        db.commit()
+        return {
+            "id": animal.id,
+            "animalTypes": [type_id.id for type_id in animal.animalTypes],
+            "weight": animal.weight,
+            "length": animal.lenght,
+            "height": animal.height,
+            "gender": animal.gender,
+            "lifeStatus": animal.lifeStatus,
+            "chippingDateTime": animal.chippingDateTime,
+            "chipperId": animal.chipperId,
+            "chippingLocationId": animal.chippingLocationId,
+            "visitedLocations": [location.id for location in animal.visitedLocations],
+            "deathDateTime": animal.deathDateTime
+        }
     except (KeyError, TypeError) as e:
         print(e)
         response.status_code = 401
